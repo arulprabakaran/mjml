@@ -1,52 +1,57 @@
-import { MJMLElement } from 'mjml-core'
-import React, { Component } from 'react'
+import { BodyComponent } from 'mjml-core'
 
-const tagName = 'mj-spacer'
-const parentTag = ['mj-column', 'mj-hero-content']
-const selfClosingTag = true
-const defaultMJMLDefinition = {
-  attributes: {
-    'align': null,
-    'container-background-color': null,
-    'height': '20px',
-    'padding-bottom': null,
-    'padding-left': null,
-    'padding-right': null,
-    'padding-top': null,
-    'vertical-align': null
+import conditionalTag from 'mjml-core/lib/helpers/conditionalTag'
+
+export default class MjSpacer extends BodyComponent {
+  static allowedAttributes = {
+    border: 'string',
+    'border-bottom': 'string',
+    'border-left': 'string',
+    'border-right': 'string',
+    'border-top': 'string',
+    'container-background-color': 'color',
+    'padding-bottom': 'unit(px,%)',
+    'padding-left': 'unit(px,%)',
+    'padding-right': 'unit(px,%)',
+    'padding-top': 'unit(px,%)',
+    padding: 'unit(px,%){1,4}',
+    'vertical-align': 'enum(top,bottom,middle)',
+    width: 'unit(px,%)',
+    height: 'unit(px,%)',
   }
-}
 
-@MJMLElement
-class Spacer extends Component {
+  static defaultAttributes = {
+    height: '20px',
+  }
 
-  styles = this.getStyles()
-
-  getStyles () {
-    const { mjAttribute, defaultUnit } = this.props
-
+  getStyles() {
     return {
       div: {
-        fontSize: '1px',
-        lineHeight: defaultUnit(mjAttribute('height')),
-        whiteSpace: 'nowrap'
-      }
+        height: this.getAttribute('height'),
+      },
     }
   }
 
-  render () {
-    return (
+  render() {
+    const height = this.getAttribute('height')
+
+    return `
+      ${conditionalTag(`
+        <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td height="${parseInt(
+          height,
+          10,
+        )}" style="vertical-align:top;height:${height};">
+      `)}
       <div
-        dangerouslySetInnerHTML={{ __html: '&nbsp;' }}
-        style={this.styles.div} />
-    )
+        ${this.htmlAttributes({
+          style: 'div',
+        })}
+      >
+        &nbsp;
+      </div>
+      ${conditionalTag(`
+        </td></tr></table>
+      `)}
+    `
   }
-
 }
-
-Spacer.tagName = tagName
-Spacer.parentTag = parentTag
-Spacer.selfClosingTag = selfClosingTag
-Spacer.defaultMJMLDefinition = defaultMJMLDefinition
-
-export default Spacer

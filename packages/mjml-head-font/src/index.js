@@ -1,14 +1,16 @@
-import find from "lodash/find"
+import { HeadComponent } from 'mjml-core'
 
-export default {
-  name: "mj-font",
-  handler: (element, { fonts }) => {
-    const font = find(fonts, ['name', element.attributes.name])
+export default class MjFont extends HeadComponent {
+  static tagOmission = true
 
-    if (font) {
-      font.url = element.attributes.href
-    } else {
-      fonts.push({ name: element.attributes.name, url: element.attributes.href })
-    }
+  static allowedAttributes = {
+    name: 'string',
+    href: 'string',
+  }
+
+  handler() {
+    const { add } = this.context
+
+    add('fonts', this.getAttribute('name'), this.getAttribute('href'))
   }
 }

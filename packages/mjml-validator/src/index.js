@@ -1,26 +1,39 @@
-import concat from 'lodash/concat'
-import filter from 'lodash/filter'
-import values from 'lodash/values'
-import ruleError from './rules/ruleError'
-import rulesCollection, { registerMJRule } from './MJMLRulesCollection'
+import { flatten, concat, filter, includes, values } from 'lodash'
 
-export { rulesCollection, registerMJRule }
+import ruleError from './rules/ruleError'
+import rulesCollection, { registerRule } from './MJMLRulesCollection'
+
+const SKIP_ELEMENTS = ['mjml']
 
 export const formatValidationError = ruleError
 
-const validateNode = (element) => {
+export { rulesCollection, registerRule }
+export dependencies, { registerDependencies } from './dependencies'
 
-  const { children } = element
+export default function MJMLValidator(element, options = {}) {
+  const { children, tagName } = element
+  let errors
 
-  let errors = concat(errors, ...values(rulesCollection).map(rule => {
-    return rule(element)
-  }))
+  const skipElements = options.skipElements || SKIP_ELEMENTS
+
+  if (!includes(skipElements, tagName)) {
+    errors = flatten(
+      concat(
+        errors,
+        ...values(rulesCollection)
+          .map(rule => rule(element, {
+            skipElements,
+            ...options,
+          })),
+      ),
+    )
+  }
 
   if (children && children.length > 0) {
-    errors = concat(errors, ...children.map((child) => validateNode(child)))
+    errors = flatten(
+      concat(errors, ...children.map(child => MJMLValidator(child, options))),
+    )
   }
 
   return filter(errors)
 }
-
-export default validateNode

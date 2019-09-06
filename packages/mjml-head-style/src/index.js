@@ -1,8 +1,18 @@
-export default {
-  name: "mj-style",
-  handler: (el, { css }) => {
-    const innerText = el.children.map(child => (child.type === 'text' || child.nodeType === Node.TEXT_NODE) && child.data).join('')
+import { HeadComponent } from 'mjml-core'
 
-    css.push(innerText)
+export default class MjStyle extends HeadComponent {
+  static endingTag = true
+
+  static allowedAttributes = {
+    inline: 'string',
+  }
+
+  handler() {
+    const { add } = this.context
+
+    add(
+      this.getAttribute('inline') === 'inline' ? 'inlineStyle' : 'style',
+      this.getContent(),
+    )
   }
 }

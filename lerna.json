@@ -1,0 +1,13 @@
+{
+  "lerna": "2.11.0",
+  "packages": [
+    "packages/*"
+  ],
+  "command": {
+    "publish": {
+      "exact": true
+    }
+  },
+  "npmClient": "yarn",
+  "version": "4.4.1"
+}

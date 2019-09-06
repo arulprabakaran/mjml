@@ -1,8 +1,11 @@
-export default {
-  name: "mj-title",
-  handler: (el, { $container }) => {
-    const innerText = el.children.map(child => (child.type === 'text' || child.nodeType === Node.TEXT_NODE) && child.data).join('')
+import { HeadComponent } from 'mjml-core'
 
-    $container('title').text(innerText)
+export default class MjTitle extends HeadComponent {
+  static endingTag = true
+
+  handler() {
+    const { add } = this.context
+
+    add('title', this.getContent())
   }
 }

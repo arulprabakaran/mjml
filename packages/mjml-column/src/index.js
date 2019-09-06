@@ -1,167 +1,280 @@
-import { MJMLElement, helpers } from 'mjml-core'
-import cx from 'classnames'
-import each from 'lodash/each'
-import React, { Component } from 'react'
-import uniq from 'lodash/uniq'
+import { BodyComponent } from 'mjml-core'
 
-const tagName = 'mj-column'
-const parentTag = ['mj-section', 'mj-group', 'mj-navbar']
-const defaultMJMLDefinition = {
-  attributes: {
-    'background': null,
-    'background-color': null,
-    "border": null,
-    "border-bottom": null,
-    "border-left": null,
-    "border-radius": null,
-    "border-right": null,
-    "border-top": null,
-    'vertical-align': null,
-    'width': null
+import widthParser from 'mjml-core/lib/helpers/widthParser'
+
+export default class MjColumn extends BodyComponent {
+  static allowedAttributes = {
+    'background-color': 'color',
+    border: 'string',
+    'border-bottom': 'string',
+    'border-left': 'string',
+    'border-radius': 'unit(px,%){1,4}',
+    'border-right': 'string',
+    'border-top': 'string',
+    direction: 'enum(ltr,rtl)',
+    'padding-bottom': 'unit(px,%)',
+    'padding-left': 'unit(px,%)',
+    'padding-right': 'unit(px,%)',
+    'padding-top': 'unit(px,%)',
+    padding: 'unit(px,%){1,4}',
+    'vertical-align': 'enum(top,bottom,middle)',
+    width: 'unit(px,%)',
   }
-}
-const baseStyles = {
-  div: {
-    verticalAlign: 'top'
+
+  static defaultAttributes = {
+    direction: 'ltr',
+    'vertical-align': 'top',
   }
-}
-const postRender = $ => {
-  const mediaQueries = []
 
-  each({ 'mj-column-per': '%', 'mj-column-px': 'px' }, (unit, className) => {
-    const columnWidths = []
+  getChildContext() {
+    const { containerWidth: parentWidth } = this.context
+    const { nonRawSiblings } = this.props
+    const { borders, paddings } = this.getBoxWidths()
 
-    $(`[class*="${className}"]`).each(function () {
-      columnWidths.push($(this).data('column-width'))
-      $(this).removeAttr('data-column-width')
+    const allPaddings = paddings + borders
+
+    let containerWidth =
+      this.getAttribute('width') ||
+      `${parseFloat(parentWidth) / nonRawSiblings}px`
+
+    const { unit, parsedWidth } = widthParser(containerWidth, {
+      parseFloatToInt: false,
     })
 
-    uniq(columnWidths).forEach((width) => {
-      const { width: parsedWidth } = helpers.widthParser(width, { parseFloatToInt: false })
-      const mediaQueryClass = `${className}-${parseInt(parsedWidth)}`
+    if (unit === '%') {
+      containerWidth = `${parseFloat(parentWidth) * parsedWidth / 100 -
+        allPaddings}px`
+    } else {
+      containerWidth = `${parsedWidth - allPaddings}px`
+    }
 
-      mediaQueries.push(`.${mediaQueryClass} { width:${parsedWidth}${unit}!important; }`)
-    })
-  })
-
-  if (mediaQueries.length > 0) {
-    const mediaQuery = `<style type="text/css">
-  @media only screen and (min-width:480px) {
-    ${mediaQueries.join('\n')}
-  }
-</style>\n`
-
-    $('head').append(mediaQuery)
+    return {
+      ...this.context,
+      containerWidth,
+    }
   }
 
-  return $
-}
+  getStyles() {
+    const tableStyle = {
+      'background-color': this.getAttribute('background-color'),
+      border: this.getAttribute('border'),
+      'border-bottom': this.getAttribute('border-bottom'),
+      'border-left': this.getAttribute('border-left'),
+      'border-radius': this.getAttribute('border-radius'),
+      'border-right': this.getAttribute('border-right'),
+      'border-top': this.getAttribute('border-top'),
+      'vertical-align': this.getAttribute('vertical-align'),
+    }
 
-@MJMLElement
-class Column extends Component {
-
-  styles = this.getStyles()
-
-  getStyles () {
-    const { mjAttribute, defaultUnit } = this.props
-
-    return helpers.merge({}, baseStyles, {
+    return {
       div: {
+        'font-size': '0px',
+        'text-align': 'left',
+        direction: this.getAttribute('direction'),
         display: 'inline-block',
-        direction: 'ltr',
-        fontSize: '13px',
-        textAlign: 'left',
-        verticalAlign: mjAttribute('vertical-align'),
-        width: this.getMobileWidth()
+        'vertical-align': this.getAttribute('vertical-align'),
+        width: this.getMobileWidth(),
       },
       table: {
-        background: mjAttribute('background-color'),
-        border: mjAttribute('border'),
-        borderBottom: mjAttribute('border-bottom'),
-        borderLeft: mjAttribute('border-left'),
-        borderRadius: defaultUnit(mjAttribute('border-radius'), "px"),
-        borderRight: mjAttribute('border-right'),
-        borderTop: mjAttribute('border-top'),
-        verticalAlign: mjAttribute('vertical-align')
-      }
-    })
-  }
-
-  getColumnClass () {
-    const { mjAttribute, sibling } = this.props
-    const width = mjAttribute('width')
-
-    if (width == undefined) {
-      return `mj-column-per-${parseInt(100 / sibling)}`
-    }
-
-    const { width: parsedWidth, unit } = helpers.widthParser(width)
-
-    switch (unit) {
-      case '%':
-        return `mj-column-per-${parsedWidth}`
-
-      case 'px':
-      default:
-        return `mj-column-px-${parsedWidth}`
+        ...(this.hasGutter() ? {} : tableStyle),
+      },
+      tdOutlook: {
+        'vertical-align': this.getAttribute('vertical-align'),
+        width: this.getWidthAsPixel(),
+      },
+      gutter: {
+        ...tableStyle,
+        padding: this.getAttribute('padding'),
+        'padding-top': this.getAttribute('padding-top'),
+        'padding-right': this.getAttribute('padding-right'),
+        'padding-bottom': this.getAttribute('padding-bottom'),
+        'padding-left': this.getAttribute('padding-left'),
+      },
     }
   }
 
-  getMobileWidth () {
-    const { mjAttribute, sibling, parentWidth, mobileWidth } = this.props
-    const width = mjAttribute('width')
+  getMobileWidth() {
+    const { containerWidth } = this.context
+    const { nonRawSiblings } = this.props
+    const width = this.getAttribute('width')
+    const mobileWidth = this.getAttribute('mobileWidth')
 
-    if (mobileWidth != "mobileWidth" ) {
+    if (mobileWidth !== 'mobileWidth') {
       return '100%'
-    } else if (width == undefined) {
-      return `${parseInt(100 / sibling)}%`
+    } else if (width === undefined) {
+      return `${parseInt(100 / nonRawSiblings, 10)}%`
     }
 
-    const { width: parsedWidth, unit } = helpers.widthParser(width)
+    const { unit, parsedWidth } = widthParser(width, {
+      parseFloatToInt: false,
+    })
 
     switch (unit) {
       case '%':
         return width
       case 'px':
       default:
-        return `${parsedWidth / parentWidth}%`
+        return `${parsedWidth / parseInt(containerWidth, 10)}%`
     }
   }
 
-  render () {
-    const { mjAttribute, children, sibling } = this.props
-    const width = mjAttribute('width') || `${100 / sibling}%`
-    const mjColumnClass = this.getColumnClass()
-    const divClasses = cx(mjColumnClass, 'outlook-group-fix')
+  getWidthAsPixel() {
+    const { containerWidth } = this.context
 
-    return (
-      <div
-        className={divClasses}
-        data-column-width={width}
-        data-vertical-align={this.styles.div.verticalAlign}
-        style={this.styles.div}>
-        <table
-          role="presentation"
-          cellPadding="0"
-          cellSpacing="0"
-          data-legacy-background={mjAttribute('background')}
-          data-legacy-border="0"
-          style={this.styles.table}
-          width="100%">
-          <tbody>
-            {React.Children.map(children, child => React.cloneElement(child, { columnElement: true }))}
-          </tbody>
-        </table>
-      </div>
-    )
+    const { unit, parsedWidth } = widthParser(this.getParsedWidth(true), {
+      parseFloatToInt: false,
+    })
+
+    if (unit === '%') {
+      return `${parseFloat(containerWidth) * parsedWidth / 100}px`
+    }
+    return `${parsedWidth}px`
   }
 
+  getParsedWidth(toString) {
+    const { nonRawSiblings } = this.props
+
+    const width = this.getAttribute('width') || `${100 / nonRawSiblings}%`
+
+    const { unit, parsedWidth } = widthParser(width, {
+      parseFloatToInt: false,
+    })
+
+    if (toString) {
+      return `${parsedWidth}${unit}`
+    }
+
+    return {
+      unit,
+      parsedWidth,
+    }
+  }
+
+  getColumnClass() {
+    const { addMediaQuery } = this.context
+
+    let className = ''
+
+    const { parsedWidth, unit } = this.getParsedWidth()
+
+    switch (unit) {
+      case '%':
+        className = `mj-column-per-${parseInt(parsedWidth, 10)}`
+        break
+
+      case 'px':
+      default:
+        className = `mj-column-px-${parseInt(parsedWidth, 10)}`
+        break
+    }
+
+    // Add className to media queries
+    addMediaQuery(className, {
+      parsedWidth,
+      unit,
+    })
+
+    return className
+  }
+
+  hasGutter() {
+    return [
+      'padding',
+      'padding-bottom',
+      'padding-left',
+      'padding-right',
+      'padding-top',
+    ].some(attr => this.getAttribute(attr) != null)
+  }
+
+  renderGutter() {
+    return `
+      <table
+        ${this.htmlAttributes({
+          border: '0',
+          cellpadding: '0',
+          cellspacing: '0',
+          role: 'presentation',
+          width: '100%',
+        })}
+      >
+        <tbody>
+          <tr>
+            <td ${this.htmlAttributes({ style: 'gutter' })}>
+              ${this.renderColumn()}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    `
+  }
+
+  renderColumn() {
+    const { children } = this.props
+
+    return `
+      <table
+        ${this.htmlAttributes({
+          border: '0',
+          cellpadding: '0',
+          cellspacing: '0',
+          role: 'presentation',
+          style: 'table',
+          width: '100%',
+        })}
+      >
+        ${this.renderChildren(children, {
+          renderer: (
+            component, // eslint-disable-line no-confusing-arrow
+          ) =>
+            component.constructor.isRawElement()
+              ? component.render()
+              : `
+            <tr>
+              <td
+                ${component.htmlAttributes({
+                  align: component.getAttribute('align'),
+                  'vertical-align': component.getAttribute('vertical-align'),
+                  class: component.getAttribute('css-class'),
+                  style: {
+                    background: component.getAttribute(
+                      'container-background-color',
+                    ),
+                    'font-size': '0px',
+                    padding: component.getAttribute('padding'),
+                    'padding-top': component.getAttribute('padding-top'),
+                    'padding-right': component.getAttribute('padding-right'),
+                    'padding-bottom': component.getAttribute('padding-bottom'),
+                    'padding-left': component.getAttribute('padding-left'),
+                    'word-break': 'break-word',
+                  },
+                })}
+              >
+                ${component.render()}
+              </td>
+            </tr>
+          `,
+        })}
+      </table>
+    `
+  }
+
+  render() {
+    let classesName = `${this.getColumnClass()} outlook-group-fix`
+
+    if (this.getAttribute('css-class')) {
+      classesName += ` ${this.getAttribute('css-class')}`
+    }
+
+    return `
+      <div
+        ${this.htmlAttributes({
+          class: classesName,
+          style: 'div',
+        })}
+      >
+        ${this.hasGutter() ? this.renderGutter() : this.renderColumn()}
+      </div>
+    `
+  }
 }
-
-Column.defaultMJMLDefinition = defaultMJMLDefinition
-Column.tagName = tagName
-Column.parentTag = parentTag
-Column.baseStyles = baseStyles
-Column.postRender = postRender
-
-export default Column

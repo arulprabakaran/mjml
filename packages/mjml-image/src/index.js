@@ -1,135 +1,168 @@
-import { MJMLElement, helpers } from 'mjml-core'
 import min from 'lodash/min'
-import React, { Component } from 'react'
 
-const tagName = 'mj-image'
-const parentTag = ['mj-column', 'mj-hero-content']
-const endingTag = true
-const selfClosingTag = true
-const defaultMJMLDefinition = {
-  attributes: {
-    'align': 'center',
-    'alt': '',
-    'border': 'none',
-    'border-radius': null,
-    'container-background-color': null,
-    'height': 'auto',
-    'href': '',
-    'padding-bottom': null,
-    'padding-left': null,
-    'padding-right': null,
-    'padding-top': null,
-    'padding': '10px 25px',
-    'src': '',
-    'target': '_blank',
-    'title': '',
-    'vertical-align': null,
-    'width': null
-  }
-}
-const baseStyles = {
-  table: {
-    borderCollapse: 'collapse',
-    borderSpacing: '0px'
-  },
-  img: {
-    border: 'none',
-    borderRadius: '',
-    display: 'block',
-    outline: 'none',
-    textDecoration: 'none',
-    width: '100%'
-  }
-}
+import { BodyComponent } from 'mjml-core'
 
-@MJMLElement
-class Image extends Component {
+import widthParser from 'mjml-core/lib/helpers/widthParser'
 
-  styles = this.getStyles()
+export default class MjImage extends BodyComponent {
+  static tagOmission = true
 
-  getContentWidth () {
-    const { mjAttribute, getPadding } = this.props
-    const parentWidth = mjAttribute('parentWidth')
-
-    const width = mjAttribute('width') ? min([parseInt(mjAttribute('width')), parseInt(parentWidth)]) : parseInt(parentWidth)
-
-    const paddingRight = getPadding('right')
-    const paddingLeft = getPadding('left')
-    const widthOverflow = paddingLeft + paddingRight + width - parseInt(parentWidth)
-
-    return widthOverflow > 0 ? width - widthOverflow : width
+  static allowedAttributes = {
+    alt: 'string',
+    href: 'string',
+    name: 'string',
+    src: 'string',
+    srcset: 'string',
+    title: 'string',
+    rel: 'string',
+    align: 'enum(left,center,right)',
+    border: 'string',
+    'border-bottom': 'string',
+    'border-left': 'string',
+    'border-right': 'string',
+    'border-top': 'string',
+    'border-radius': 'unit(px,%){1,4}',
+    'container-background-color': 'color',
+    'fluid-on-mobile': 'boolean',
+    padding: 'unit(px,%){1,4}',
+    'padding-bottom': 'unit(px,%)',
+    'padding-left': 'unit(px,%)',
+    'padding-right': 'unit(px,%)',
+    'padding-top': 'unit(px,%)',
+    target: 'string',
+    width: 'unit(px)',
+    height: 'unit(px,auto)',
+    'max-height': 'unit(px,%)',
+    'font-size': 'unit(px)',
   }
 
-  getStyles () {
-    const { mjAttribute, defaultUnit } = this.props
+  static defaultAttributes = {
+    align: 'center',
+    border: '0',
+    height: 'auto',
+    padding: '10px 25px',
+    target: '_blank',
+    'font-size': '13px',
+  }
 
-    return helpers.merge({}, baseStyles, {
-      td: {
-        width: defaultUnit(this.getContentWidth())
-      },
+  getStyles() {
+    const width = this.getContentWidth()
+    const fullWidth = this.getAttribute('full-width') === 'full-width'
+
+    const { parsedWidth, unit } = widthParser(width)
+
+    return {
       img: {
-        border: mjAttribute('border'),
-        height: mjAttribute('height'),
-        borderRadius: defaultUnit(mjAttribute('border-radius'), "px")
-      }
-    })
+        border: this.getAttribute('border'),
+        'border-left': this.getAttribute('left'),
+        'border-right': this.getAttribute('right'),
+        'border-top': this.getAttribute('top'),
+        'border-bottom': this.getAttribute('bottom'),
+        'border-radius': this.getAttribute('border-radius'),
+        display: 'block',
+        outline: 'none',
+        'text-decoration': 'none',
+        height: this.getAttribute('height'),
+        'max-height': this.getAttribute('max-height'),
+        'min-width': fullWidth ? '100%' : null,
+        width: '100%',
+        'max-width': fullWidth ? '100%' : null,
+        'font-size': this.getAttribute('font-size'),
+      },
+      td: {
+        width: fullWidth ? null : `${parsedWidth}${unit}`,
+      },
+      table: {
+        'min-width': fullWidth ? '100%' : null,
+        'max-width': fullWidth ? '100%' : null,
+        width: fullWidth ? `${parsedWidth}${unit}` : null,
+        'border-collapse': 'collapse',
+        'border-spacing': '0px',
+      },
+    }
   }
 
-  renderImage () {
-    const { mjAttribute } = this.props
+  getContentWidth() {
+    const width = this.getAttribute('width')
+                ? parseInt(this.getAttribute('width'), 10)
+                : Infinity
 
-    const img = (
+    const { box } = this.getBoxWidths()
+
+    return min([ box, width ])
+  }
+
+  renderImage() {
+    const height = this.getAttribute('height')
+
+    const img = `
       <img
-        alt={mjAttribute('alt')}
-        title={mjAttribute('title')}
-        height={mjAttribute('height')}
-        src={mjAttribute('src')}
-        style={this.styles.img}
-        width={this.getContentWidth()} />
-    )
+        ${this.htmlAttributes({
+          alt: this.getAttribute('alt'),
+          height: height && (height === 'auto' ? height : parseInt(height, 10)),
+          src: this.getAttribute('src'),
+          srcset: this.getAttribute('srcset'),
+          style: 'img',
+          title: this.getAttribute('title'),
+          width: this.getContentWidth(),
+        })}
+      />
+    `
 
-    if (mjAttribute('href') != '') {
-      return (
+    if (this.getAttribute('href')) {
+      return `
         <a
-          href={mjAttribute('href')}
-          target={mjAttribute('target')}>
-          {img}
+          ${this.htmlAttributes({
+            href: this.getAttribute('href'),
+            target: this.getAttribute('target'),
+            rel: this.getAttribute('rel'),
+            name: this.getAttribute('name'),
+          })}
+        >
+          ${img}
         </a>
-      )
+      `
     }
 
     return img
   }
 
-  render () {
-    const { mjAttribute } = this.props
+  headStyle = breakpoint => `
+    @media only screen and (max-width:${breakpoint}) {
+      table.full-width-mobile { width: 100% !important; }
+      td.full-width-mobile { width: auto !important; }
+    }
+  `
 
-    return (
+  render() {
+    return `
       <table
-        role="presentation"
-        cellPadding="0"
-        cellSpacing="0"
-        data-legacy-align={mjAttribute('align')}
-        data-legacy-border="0"
-        style={this.styles.table}>
+        ${this.htmlAttributes({
+          border: '0',
+          cellpadding: '0',
+          cellspacing: '0',
+          role: 'presentation',
+          style: 'table',
+          class:
+            this.getAttribute('fluid-on-mobile')
+              ? 'full-width-mobile'
+              : null,
+        })}
+      >
         <tbody>
           <tr>
-            <td style={this.styles.td}>
-              {this.renderImage()}
+            <td ${this.htmlAttributes({
+              style: 'td',
+              class:
+                this.getAttribute('fluid-on-mobile')
+                  ? 'full-width-mobile'
+                  : null,
+            })}>
+              ${this.renderImage()}
             </td>
           </tr>
         </tbody>
       </table>
-    )
+    `
   }
-
 }
-
-Image.tagName = tagName
-Image.parentTag = parentTag
-Image.endingTag = endingTag
-Image.selfClosingTag = selfClosingTag
-Image.defaultMJMLDefinition = defaultMJMLDefinition
-Image.baseStyles = baseStyles
-
-export default Image

@@ -1,3 +1,4 @@
-export * from './validAttributes'
-export * from './validChildren'
-export * from './validTag'
+export validAttributes from './validAttributes'
+export validChildren from './validChildren'
+export validTag from './validTag'
+export validTypes from './validTypes'

@@ -1,125 +1,198 @@
-import { MJMLElement, helpers } from 'mjml-core'
-import React, { Component } from 'react'
+import { BodyComponent } from 'mjml-core'
 
-const tagName = 'mj-group'
-const parentTag = ['mj-section', 'mj-navbar']
-const defaultMJMLDefinition = {
-  attributes: {
-    'width': null,
-    'background-color': null,
-    'vertical-align': null
+import widthParser from 'mjml-core/lib/helpers/widthParser'
+
+export default class MjGroup extends BodyComponent {
+  static allowedAttributes = {
+    'background-color': 'color',
+    direction: 'enum(ltr,rtl)',
+    'vertical-align': 'enum(top,bottom,middle)',
+    width: 'unit(px,%)',
   }
-}
-const baseStyles = {
-  div: {
-    verticalAlign: 'top'
+
+  static defaultAttributes = {
+    direction: 'ltr',
   }
-}
-const postRender = $ => {
-  $('.mj-group-outlook-open').each(function () {
-    const $parent = $(this).parent()
-    const mjGroupBg = $parent.data('mj-group-background')
-    const $columnDiv = $(this).next()
-    const bgColor = mjGroupBg ? `bgcolor="${mjGroupBg}"` : ``
 
-    $(this).replaceWith(`${helpers.startConditionalTag}
-      <table ${bgColor} role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="vertical-align:${$columnDiv.data('vertical-align')};width:${parseInt($(this).data('width'))}px;">
-      ${helpers.endConditionalTag}`)
+  getChildContext() {
+    const { containerWidth: parentWidth } = this.context
+    const { nonRawSiblings, children } = this.props
+    const paddingSize =
+      this.getShorthandAttrValue('padding', 'left') +
+      this.getShorthandAttrValue('padding', 'right')
 
-    $parent.removeAttr('data-mj-group-background')
-    $columnDiv.removeAttr('data-vertical-align')
-  })
+    let containerWidth =
+      this.getAttribute('width') ||
+      `${parseFloat(parentWidth) / nonRawSiblings}px`
 
-  $('.mj-group-outlook-line').each(function () {
-    const $columnDiv = $(this).next()
-
-    $(this).replaceWith(`${helpers.startConditionalTag}
-    </td><td style="vertical-align:${$columnDiv.data('vertical-align')};width:${parseInt($(this).data('width'))}px;">
-      ${helpers.endConditionalTag}`)
-
-    $columnDiv.removeAttr('data-vertical-align')
-  })
-
-  $('.mj-group-outlook-close').each(function () {
-    $(this).replaceWith(`${helpers.startConditionalTag}
-      </td></tr></table>
-      ${helpers.endConditionalTag}`)
-  })
-
-  return $
-}
-
-@MJMLElement
-class Group extends Component {
-
-  styles = this.getStyles()
-
-  getStyles () {
-    const { mjAttribute } = this.props
-
-    return helpers.merge({}, baseStyles, {
-      div: {
-        background: mjAttribute('background-color'),
-        display: 'inline-block',
-        verticalAlign: mjAttribute('vertical-align'),
-        fontSize: '0px',
-        lineHeight: '0px',
-        textAlign: 'left',
-        width: '100%'
-      }
+    const { unit, parsedWidth } = widthParser(containerWidth, {
+      parseFloatToInt: false,
     })
-  }
 
-  getGroupClass () {
-    const { mjAttribute, sibling } = this.props
-    const width = mjAttribute('width')
-    const parentWidth = this.props.parentWidth || mjAttribute('parentWidth')
-
-    if (width == undefined) {
-      return `mj-column-per-${parseInt(100 / sibling)}`
+    if (unit === '%') {
+      containerWidth = `${parseFloat(parentWidth) * parsedWidth / 100 -
+        paddingSize}px`
+    } else {
+      containerWidth = `${parsedWidth - paddingSize}px`
     }
 
-    const { width: parsedWidth, unit } = helpers.widthParser(width)
+    return {
+      ...this.context,
+      containerWidth,
+      nonRawSiblings: children.length,
+    }
+  }
+
+  getStyles() {
+    return {
+      div: {
+        'font-size': '0',
+        'line-height': '0',
+        'text-align': 'left',
+        display: 'inline-block',
+        width: '100%',
+        direction: this.getAttribute('direction'),
+        'vertical-align': this.getAttribute('vertical-align'),
+        'background-color': this.getAttribute('background-color'),
+      },
+      tdOutlook: {
+        'vertical-align': this.getAttribute('vertical-align'),
+        width: this.getWidthAsPixel(),
+      },
+    }
+  }
+
+  getParsedWidth(toString) {
+    const { nonRawSiblings } = this.props
+
+    const width = this.getAttribute('width') || `${100 / nonRawSiblings}%`
+
+    const { unit, parsedWidth } = widthParser(width, {
+      parseFloatToInt: false,
+    })
+
+    if (toString) {
+      return `${parsedWidth}${unit}`
+    }
+
+    return {
+      unit,
+      parsedWidth,
+    }
+  }
+
+  getWidthAsPixel() {
+    const { containerWidth } = this.context
+
+    const { unit, parsedWidth } = widthParser(this.getParsedWidth(true), {
+      parseFloatToInt: false,
+    })
+
+    if (unit === '%') {
+      return `${parseFloat(containerWidth) * parsedWidth / 100}px`
+    }
+    return `${parsedWidth}px`
+  }
+
+  getColumnClass() {
+    const { addMediaQuery } = this.context
+
+    let className = ''
+
+    const { parsedWidth, unit } = this.getParsedWidth()
 
     switch (unit) {
       case '%':
-        return `mj-column-per-${parsedWidth}`
+        className = `mj-column-per-${parseInt(parsedWidth, 10)}`
+        break
 
       case 'px':
-        const percentWidth = parseInt(width) / parentWidth * 100
-        return `mj-column-per-${percentWidth}`
+      default:
+        className = `mj-column-px-${parseInt(parsedWidth, 10)}`
+        break
     }
+
+    // Add className to media queries
+    addMediaQuery(className, {
+      parsedWidth,
+      unit,
+    })
+
+    return className
   }
 
-  renderChildren () {
-    const { children } = this.props
+  render() {
+    const { children, nonRawSiblings } = this.props
 
-    return children.map(child => React.cloneElement(child, { mobileWidth: "mobileWidth" }))
-  }
+    const { containerWidth: groupWidth } = this.getChildContext()
 
-  render () {
-    const { mjAttribute, sibling, renderWrappedOutlookChildren } = this.props
-    const width = mjAttribute('width') || (100 / sibling)
-    const mjGroupClass = this.getGroupClass()
+    const { containerWidth } = this.context
 
-    return (
+    const getElementWidth = width => {
+      if (!width) {
+        return `${parseInt(containerWidth, 10) /
+          parseInt(nonRawSiblings, 10)}px`
+      }
+
+      const { unit, parsedWidth } = widthParser(width, {
+        parseFloatToInt: false,
+      })
+
+      if (unit === '%') {
+        return `${100 * parsedWidth / groupWidth}px`
+      }
+      return `${parsedWidth}${unit}`
+    }
+
+    let classesName = `${this.getColumnClass()} outlook-group-fix`
+
+    if (this.getAttribute('css-class')) {
+      classesName += ` ${this.getAttribute('css-class')}`
+    }
+
+    return `
       <div
-        className={mjGroupClass}
-        data-column-width={parseInt(width)}
-        data-vertical-align={this.styles.div.verticalAlign}
-        data-mj-group-background={mjAttribute('background-color')}
-        style={this.styles.div}>
-        {renderWrappedOutlookChildren(this.renderChildren())}
+        ${this.htmlAttributes({
+          class: classesName,
+          style: 'div',
+        })}
+      >
+        <!--[if mso | IE]>
+        <table  role="presentation" border="0" cellpadding="0" cellspacing="0">
+          <tr>
+        <![endif]-->
+          ${this.renderChildren(children, {
+            attributes: { mobileWidth: 'mobileWidth' },
+            renderer: component =>
+              component.constructor.isRawElement()
+                ? component.render()
+                : `
+              <!--[if mso | IE]>
+              <td
+                ${component.htmlAttributes({
+                  style: {
+                    align: component.getAttribute('align'),
+                    'vertical-align': component.getAttribute('vertical-align'),
+                    width: getElementWidth(
+                      component.getWidthAsPixel
+                        ? component.getWidthAsPixel()
+                        : component.getAttribute('width'),
+                    ),
+                  },
+                })}
+              >
+              <![endif]-->
+                ${component.render()}
+              <!--[if mso | IE]>
+              </td>
+              <![endif]-->
+          `,
+          })}
+        <!--[if mso | IE]>
+          </tr>
+          </table>
+        <![endif]-->
       </div>
-    )
+    `
   }
-
 }
-
-Group.tagName = tagName
-Group.baseStyles = baseStyles
-Group.postRender = postRender
-Group.parentTag = parentTag
-Group.defaultMJMLDefinition = defaultMJMLDefinition
-
-export default Group

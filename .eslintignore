@@ -1,4 +1,5 @@
-lib
 node_modules
-packages/mjml/test.js
-packages/mjml/test_cli/*
+lib
+packages/mjml-core/src/types*
+type.js
+test.js

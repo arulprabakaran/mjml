@@ -1,32 +1,50 @@
-import { elements } from 'mjml-core'
 import filter from 'lodash/filter'
 import includes from 'lodash/includes'
+import keys from 'lodash/keys'
+
+import dependencies from '../dependencies'
 import ruleError from './ruleError'
 
-export const validChildren = (element) => {
+export default function validChildren(element, { components, skipElements }) {
   const { children, tagName } = element
-  const Component = elements[tagName]
 
-  if (!Component) {
-    return;
+  const Component = components[tagName]
+
+  if (!Component || !children || !children.length) {
+    return null
   }
 
-  if (!children || children.length == 0) {
-    return;
-  }
+  return filter(
+    children.map(child => {
+      const childTagName = child.tagName
+      const ChildComponent = components[childTagName]
+      const parentDependencies = dependencies[tagName] || []
 
-  return filter(children.map((child) => {
-    const childTagName = child.tagName
-    const ChildComponent = elements[childTagName]
+      if (
+        !ChildComponent ||
+        includes(skipElements, childTagName) ||
+        includes(parentDependencies, childTagName) ||
+        parentDependencies.some(
+          dep => dep instanceof RegExp && dep.test(childTagName),
+        )
+      ) {
+        return null
+      }
 
-    if (!ChildComponent) {
-      return null;
-    }
+      const allowedDependencies = keys(dependencies).filter(
+        key =>
+          includes(dependencies[key], childTagName) ||
+          dependencies[key].some(
+            dep => dep instanceof RegExp && dep.test(childTagName),
+          ),
+      )
 
-    if (includes(ChildComponent.parentTag, tagName)) {
-      return null;
-    }
-
-    return ruleError(`${ChildComponent.tagName} cannot be used inside ${tagName}, only inside: ${ChildComponent.parentTag.join(', ')}`, child)
-  }))
+      return ruleError(
+        `${childTagName} cannot be used inside ${tagName}, only inside: ${allowedDependencies.join(
+          ', ',
+        )}`,
+        child,
+      )
+    }),
+  )
 }

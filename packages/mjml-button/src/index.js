@@ -1,141 +1,161 @@
-import { MJMLElement, helpers } from 'mjml-core'
-import React, { Component } from 'react'
+import { BodyComponent } from 'mjml-core'
 
-const tagName = 'mj-button'
-const parentTag = ['mj-column', 'mj-hero-content']
-const endingTag = true
-const defaultMJMLDefinition = {
-  content: '',
-  attributes: {
-    "background-color": "#414141",
-    "border": "none",
-    "border-bottom": null,
-    "border-left": null,
-    "border-radius": "3px",
-    "border-right": null,
-    "border-top": null,
-    "container-background-color": null,
-    "font-style": null,
-    "font-size": "13px",
-    "font-weight": "normal",
-    "font-family": "Ubuntu, Helvetica, Arial, sans-serif",
-    "color": "#ffffff",
-    "text-decoration": "none",
-    "text-transform": "none",
-    "align": "center",
-    "vertical-align": "middle",
-    "href": null,
-    "inner-padding": "10px 25px",
-    'padding': '10px 25px',
-    "padding-top": null,
-    "padding-bottom": null,
-    "padding-left": null,
-    "padding-right": null,
-    "width": null,
-    "height": null
+import widthParser from 'mjml-core/lib/helpers/widthParser'
+
+export default class MjButton extends BodyComponent {
+  static endingTag = true
+
+  static allowedAttributes = {
+    align: 'enum(left,center,right)',
+    'background-color': 'color',
+    'border-bottom': 'string',
+    'border-left': 'string',
+    'border-radius': 'string',
+    'border-right': 'string',
+    'border-top': 'string',
+    border: 'string',
+    color: 'color',
+    'container-background-color': 'color',
+    'font-family': 'string',
+    'font-size': 'unit(px)',
+    'font-style': 'string',
+    'font-weight': 'string',
+    height: 'unit(px,%)',
+    href: 'string',
+    name: 'string',
+    'inner-padding': 'unit(px,%){1,4}',
+    'line-height': 'unit(px,%,)',
+    'padding-bottom': 'unit(px,%)',
+    'padding-left': 'unit(px,%)',
+    'padding-right': 'unit(px,%)',
+    'padding-top': 'unit(px,%)',
+    padding: 'unit(px,%){1,4}',
+    rel: 'string',
+    target: 'string',
+    'text-decoration': 'string',
+    'text-transform': 'string',
+    'vertical-align': 'enum(top,bottom,middle)',
+    'text-align': 'enum(left,right,center)',
+    width: 'unit(px,%)',
   }
-}
-const baseStyles = {
-  table: {
-    borderCollapse: 'separate'
-  },
-  a: {
-    textDecoration: 'none',
-    lineHeight: '100%'
+
+  static defaultAttributes = {
+    align: 'center',
+    'background-color': '#414141',
+    border: 'none',
+    'border-radius': '3px',
+    color: '#ffffff',
+    'font-family': 'Ubuntu, Helvetica, Arial, sans-serif',
+    'font-size': '13px',
+    'font-weight': 'normal',
+    'inner-padding': '10px 25px',
+    'line-height': '120%',
+    padding: '10px 25px',
+    target: '_blank',
+    'text-decoration': 'none',
+    'text-transform': 'none',
+    'vertical-align': 'middle',
   }
-}
 
-@MJMLElement
-class Button extends Component {
-
-  styles = this.getStyles()
-
-  getStyles () {
-    const { mjAttribute, defaultUnit } = this.props
-
-    return helpers.merge({}, baseStyles, {
+  getStyles() {
+    return {
       table: {
-        width: mjAttribute('width')
+        'border-collapse': 'separate',
+        width: this.getAttribute('width'),
+        'line-height': '100%',
       },
       td: {
-        border: mjAttribute('border'),
-        borderBottom: mjAttribute('border-bottom'),
-        borderLeft: mjAttribute('border-left'),
-        borderRadius: defaultUnit(mjAttribute('border-radius'), "px"),
-        borderRight: mjAttribute('border-right'),
-        borderTop: mjAttribute('border-top'),
-        color: mjAttribute('color'),
+        border: this.getAttribute('border'),
+        'border-bottom': this.getAttribute('border-bottom'),
+        'border-left': this.getAttribute('border-left'),
+        'border-radius': this.getAttribute('border-radius'),
+        'border-right': this.getAttribute('border-right'),
+        'border-top': this.getAttribute('border-top'),
         cursor: 'auto',
-        fontStyle: mjAttribute('font-style'),
-        height: mjAttribute('height'),
-        padding: defaultUnit(mjAttribute('inner-padding'), "px")
+        'font-style': this.getAttribute('font-style'),
+        height: this.getAttribute('height'),
+        'mso-padding-alt': this.getAttribute('inner-padding'),
+        'text-align': this.getAttribute('text-align'),
+        background: this.getAttribute('background-color'),
       },
-      a: {
-        background: mjAttribute('background-color'),
-        color: mjAttribute('color'),
-        fontFamily: mjAttribute('font-family'),
-        fontSize: defaultUnit(mjAttribute('font-size')),
-        fontStyle: mjAttribute('font-style'),
-        fontWeight: mjAttribute('font-weight'),
-        textDecoration: mjAttribute('text-decoration'),
-        textTransform: mjAttribute('text-transform'),
-        margin: "0px"
-      }
-    })
-  }
-
-  renderButton () {
-    const { mjContent, mjAttribute } = this.props
-
-    if (mjAttribute('href')) {
-      return (
-        <a
-          dangerouslySetInnerHTML={{ __html: mjContent() }}
-          href={mjAttribute('href')}
-          style={this.styles.a}
-          target="_blank" />
-      )
+      content: {
+        display: 'inline-block',
+        width: this.calculateAWidth(this.getAttribute('width')),
+        background: this.getAttribute('background-color'),
+        color: this.getAttribute('color'),
+        'font-family': this.getAttribute('font-family'),
+        'font-size': this.getAttribute('font-size'),
+        'font-style': this.getAttribute('font-style'),
+        'font-weight': this.getAttribute('font-weight'),
+        'line-height': this.getAttribute('line-height'),
+        margin: '0',
+        'text-decoration': this.getAttribute('text-decoration'),
+        'text-transform': this.getAttribute('text-transform'),
+        padding: this.getAttribute('inner-padding'),
+        'mso-padding-alt': '0px',
+        'border-radius': this.getAttribute('border-radius'),
+      },
     }
-
-    return (
-      <p
-        dangerouslySetInnerHTML={{ __html: mjContent() }}
-        style={this.styles.a} />
-    )
   }
 
-  render () {
-    const { mjAttribute } = this.props
+  calculateAWidth(width) {
+    if (!width) return null
 
-    return (
+    const { parsedWidth, unit } = widthParser(width)
+
+    // impossible to handle percents because it depends on padding and text width
+    if (unit !== 'px') return null
+
+    const { borders } = this.getBoxWidths()
+
+    const innerPaddings =
+      this.getShorthandAttrValue('inner-padding', 'left') +
+      this.getShorthandAttrValue('inner-padding', 'right')
+
+
+    return `${parsedWidth - innerPaddings - borders}px`
+  }
+
+  render() {
+    const tag = this.getAttribute('href') ? 'a' : 'p'
+
+    return `
       <table
-        role="presentation"
-        cellPadding="0"
-        cellSpacing="0"
-        data-legacy-align={mjAttribute('align')}
-        data-legacy-border="0"
-        style={this.styles.table}>
-        <tbody>
-          <tr>
-            <td
-              data-legacy-align="center"
-              data-legacy-bgcolor={mjAttribute('background-color') === "none" ? "" : mjAttribute('background-color')}
-              data-legacy-valign={mjAttribute('vertical-align')}
-              style={this.styles.td}>
-              {this.renderButton()}
-            </td>
-          </tr>
-        </tbody>
+        ${this.htmlAttributes({
+          border: '0',
+          cellpadding: '0',
+          cellspacing: '0',
+          role: 'presentation',
+          style: 'table',
+        })}
+      >
+        <tr>
+          <td
+            ${this.htmlAttributes({
+              align: 'center',
+              bgcolor:
+                this.getAttribute('background-color') === 'none'
+                  ? undefined
+                  : this.getAttribute('background-color'),
+              role: 'presentation',
+              style: 'td',
+              valign: this.getAttribute('vertical-align'),
+            })}
+          >
+            <${tag}
+              ${this.htmlAttributes({
+                href: this.getAttribute('href'),
+                rel: this.getAttribute('rel'),
+                name: this.getAttribute('name'),
+                style: 'content',
+                target: tag === 'a' ? this.getAttribute('target') : undefined,
+              })}
+            >
+              ${this.getContent()}
+            </${tag}>
+          </td>
+        </tr>
       </table>
-    )
+    `
   }
-
 }
-
-Button.tagName = tagName
-Button.parentTag = parentTag
-Button.endingTag = endingTag
-Button.defaultMJMLDefinition = defaultMJMLDefinition
-Button.baseStyles = baseStyles
-
-export default Button

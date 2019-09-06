@@ -1,4 +1,2 @@
-import Carousel from './Carousel'
-import CarouselImage from './CarouselImage'
-
-export default { Carousel, CarouselImage }
+export Carousel from './Carousel'
+export CarouselImage from './CarouselImage'

@@ -1,100 +1,82 @@
-import { MJMLElement, helpers } from 'mjml-core'
-import React, { Component } from 'react'
+import { BodyComponent } from 'mjml-core'
 
-const tagName = 'mj-text'
-const parentTag = ['mj-column', 'mj-hero-content']
-const endingTag = true
-const defaultMJMLDefinition = {
-  content: '',
-  attributes: {
-    'align': 'left',
-    'color': '#000000',
-    'container-background-color': null,
+import conditionalTag from 'mjml-core/lib/helpers/conditionalTag'
+
+export default class MjText extends BodyComponent {
+  static endingTag = true
+
+  static allowedAttributes = {
+    align: 'enum(left,right,center,justify)',
+    'background-color': 'color',
+    color: 'color',
+    'container-background-color': 'color',
+    'font-family': 'string',
+    'font-size': 'unit(px)',
+    'font-style': 'string',
+    'font-weight': 'string',
+    height: 'unit(px,%)',
+    'letter-spacing': 'unit(px,%)',
+    'line-height': 'unit(px,%,)',
+    'padding-bottom': 'unit(px,%)',
+    'padding-left': 'unit(px,%)',
+    'padding-right': 'unit(px,%)',
+    'padding-top': 'unit(px,%)',
+    padding: 'unit(px,%){1,4}',
+    'text-decoration': 'string',
+    'text-transform': 'string',
+    'vertical-align': 'enum(top,bottom,middle)',
+  }
+
+  static defaultAttributes = {
+    align: 'left',
+    color: '#000000',
     'font-family': 'Ubuntu, Helvetica, Arial, sans-serif',
     'font-size': '13px',
-    'font-style': null,
-    'font-weight': null,
-    'line-height': '22px',
-    'letter-spacing': null,
-    'height': null,
-    'padding-bottom': null,
-    'padding-left': null,
-    'padding-right': null,
-    'padding-top': null,
-    'padding': '10px 25px',
-    'text-decoration': null,
-    'text-transform': null,
-    'vertical-align': null
-  }
-}
-const baseStyles = {
-  div: {
-    cursor: 'auto'
-  }
-}
-
-const postRender = $ => {
-  $('.mj-text-height').each(function () {
-
-    const height = parseInt($(this).css('height'))
-
-    $(`${helpers.startConditionalTag}
-      <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td height="${height}" style="vertical-align:top;height:${height}px;">
-      ${helpers.endConditionalTag}`).insertBefore($(this))
-
-    $(`${helpers.startConditionalTag}
-      </td></tr></table>
-      ${helpers.endConditionalTag}`).insertAfter($(this))
-    $(this).removeClass('mj-text-height').filter('[class=""]').removeAttr('class')
-  })
-  return $
-}
-
-@MJMLElement
-class Text extends Component {
-
-  styles = this.getStyles()
-
-  getStyles () {
-    const { mjAttribute, defaultUnit } = this.props
-
-    return helpers.merge({}, baseStyles, {
-      div: {
-        color: mjAttribute('color'),
-        fontFamily: mjAttribute('font-family'),
-        fontSize: defaultUnit(mjAttribute('font-size')),
-        fontStyle: mjAttribute('font-style'),
-        fontWeight: mjAttribute('font-weight'),
-        lineHeight: mjAttribute('line-height'),
-        letterSpacing: defaultUnit(mjAttribute('letter-spacing'), "px"),
-        height: defaultUnit(mjAttribute('height'), "px"),
-        textAlign: mjAttribute('align'),
-        textDecoration: mjAttribute('text-decoration'),
-        textTransform: mjAttribute('text-transform')
-      }
-    })
+    'line-height': '1',
+    padding: '10px 25px',
   }
 
-  render () {
-    const { mjAttribute, mjContent } = this.props
+  getStyles() {
+    return {
+      text: {
+        'font-family': this.getAttribute('font-family'),
+        'font-size': this.getAttribute('font-size'),
+        'font-style': this.getAttribute('font-style'),
+        'font-weight': this.getAttribute('font-weight'),
+        'letter-spacing': this.getAttribute('letter-spacing'),
+        'line-height': this.getAttribute('line-height'),
+        'text-align': this.getAttribute('align'),
+        'text-decoration': this.getAttribute('text-decoration'),
+        'text-transform': this.getAttribute('text-transform'),
+        color: this.getAttribute('color'),
+        height: this.getAttribute('height'),
+      },
+    }
+  }
 
-    const classNames = mjAttribute('height') ? 'mj-text-height' : ''
-
-    return (
+  renderContent() {
+    return `
       <div
-        className={classNames}
-        dangerouslySetInnerHTML={{ __html: mjContent() }}
-        style={this.styles.div} />
-    )
+        ${this.htmlAttributes({
+          style: 'text',
+        })}
+      >${this.getContent()}</div>
+    `
   }
 
+  render() {
+    const height = this.getAttribute('height')
+
+    return height
+      ? `
+        ${conditionalTag(`
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td height="${height}" style="vertical-align:top;height:${height};">
+        `)}
+        ${this.renderContent()}
+        ${conditionalTag(`
+          </td></tr></table>
+        `)}
+      `
+      : this.renderContent()
+  }
 }
-
-Text.tagName = tagName
-Text.parentTag = parentTag
-Text.endingTag = endingTag
-Text.defaultMJMLDefinition = defaultMJMLDefinition
-Text.baseStyles = baseStyles
-Text.postRender = postRender
-
-export default Text

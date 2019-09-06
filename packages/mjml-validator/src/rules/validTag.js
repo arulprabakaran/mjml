@@ -1,11 +1,22 @@
-import { elements } from 'mjml-core'
+import { includes } from 'lodash'
 import ruleError from './ruleError'
 
-export const validateTag = (element) => {
+// Tags that have no associated components but are allowed even so
+const componentLessTags = ['mj-all', 'mj-class']
+
+export default function validateTag(element, { components }) {
   const { tagName } = element
-  const Component = elements[tagName]
+
+  if (includes(componentLessTags, tagName)) return null
+
+  const Component = components[tagName]
 
   if (!Component) {
-    return ruleError(`Element ${tagName} doesn't exist or is not registered`, element)
+    return ruleError(
+      `Element ${tagName} doesn't exist or is not registered`,
+      element,
+    )
   }
+
+  return null
 }

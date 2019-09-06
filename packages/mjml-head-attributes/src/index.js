@@ -1,21 +1,36 @@
-import compact from 'lodash/compact'
-import each from 'lodash/each'
-import filter from 'lodash/filter'
+import forEach from 'lodash/forEach'
 import omit from 'lodash/omit'
-import { helpers } from 'mjml-core'
+import reduce from 'lodash/reduce'
 
-export default {
-  name: "mj-attributes",
-  handler: (element, { defaultAttributes, cssClasses }) => {
-    each(compact(filter(element.children, child => child.tagName)), elem => {
-      const tagName = elem.tagName.toLowerCase()
-      const attributes = helpers.dom.getAttributes(elem);
+import { HeadComponent } from 'mjml-core'
+
+export default class MjAttributes extends HeadComponent {
+  handler() {
+    const { add } = this.context
+
+    const { children } = this.props
+
+    forEach(children, child => {
+      const { tagName, attributes, children } = child
 
       if (tagName === 'mj-class') {
-        return cssClasses[attributes.name] = omit(attributes, ['name'])
-      }
+        add('classes', attributes.name, omit(attributes, ['name']))
 
-      defaultAttributes[tagName] =  attributes
+        add(
+          'classesDefault',
+          attributes.name,
+          reduce(
+            children,
+            (acc, { tagName, attributes }) => ({
+              ...acc,
+              [tagName]: attributes,
+            }),
+            {},
+          ),
+        )
+      } else {
+        add('defaultAttributes', tagName, attributes)
+      }
     })
   }
 }
